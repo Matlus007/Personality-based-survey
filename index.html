@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宽柔中学至达城分校 - 选修课问卷</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --klein-blue: #002FA7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #FAFAFA; color: #333; }
+        .text-klein { color: var(--klein-blue); }
+        .bg-klein { background-color: var(--klein-blue); }
+        .border-klein { border-color: var(--klein-blue); }
+        .btn { transition: all 0.2s; }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .radio-custom:checked + div { background-color: var(--klein-blue); color: white; border-color: var(--klein-blue); }
+        .hidden-view { display: none; }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
+            <h1 class="text-xl font-bold tracking-tight">选修课数据采集系统</h1>
+            <span class="text-sm text-gray-500">FY Seri Alam</span>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 mt-8" id="main-container">
+        <div id="student-view">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100 mb-8">
+                <h2 class="text-lg font-bold mb-4 border-b pb-2">个人信息</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input type="text" id="stu-name" placeholder="姓名" class="w-full p-2 border rounded focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein" onchange="saveProgress()">
+                    <input type="text" id="stu-class" placeholder="班级 (如: 高二理1)" class="w-full p-2 border rounded focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein" onchange="saveProgress()">
+                    <input type="text" id="stu-id" placeholder="学号" class="w-full p-2 border rounded focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein" onchange="saveProgress()">
+                </div>
+            </div>
+
+            <div id="questions-container" class="space-y-6"></div>
+
+            <button onclick="submitSurvey()" class="btn bg-klein text-white w-full py-4 rounded-lg font-bold text-lg mt-8 shadow-md">提交问卷</button>
+        </div>
+
+        <div id="result-view" class="hidden-view bg-white p-8 rounded-lg shadow-sm text-center border-t-4 border-klein mt-8">
+            <h2 class="text-2xl font-bold mb-2">分析完成</h2>
+            <p class="text-gray-600 mb-6">根据你的答题数据，你的专属定位如下：</p>
+            <div id="result-content" class="space-y-4"></div>
+            <p class="text-sm text-gray-400 mt-8">数据已成功上传至服务器。你可以关闭此页面。</p>
+        </div>
+
+        <div id="teacher-view" class="hidden-view mt-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-klein">后台看板 Dashboard</h2>
+                    <button onclick="logoutAdmin()" class="text-sm text-gray-500 hover:text-red-500">退出</button>
+                </div>
+                
+                <div class="flex space-x-4 mb-6 border-b pb-2">
+                    <button onclick="switchAdminTab('list')" id="tab-list" class="font-bold text-klein border-b-2 border-klein pb-1">学生答题明细</button>
+                    <button onclick="switchAdminTab('stats')" id="tab-stats" class="text-gray-500 pb-1 hover:text-klein">数据统计</button>
+                </div>
+
+                <div id="admin-list">
+                    <div id="student-list-container" class="space-y-2">加载中...</div>
+                </div>
+
+                <div id="admin-stats" class="hidden-view">
+                    <select id="question-select" class="w-full p-2 border rounded mb-6 focus:outline-none focus:border-klein" onchange="updateChart()">
+                        </select>
+                    <div class="relative h-64 w-full">
+                        <canvas id="statsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center mt-12 text-gray-400 text-xs">
+        <p onclick="triggerAdmin()" class="cursor-pointer select-none">© 2026 Foon Yew High School Seri Alam. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // --- 配置与题库 ---
+        const GAS_URL = "在此处填入你的_Google_Apps_Script_Web_App_URL"; // 部署GAS后替换此链接
+        const ADMIN_PWD = "88888888";
+        
+        // 简化展示：由于篇幅限制，这里放入核心题目结构。请将50题补充完整。
+        const questions = [
+            { id: 1, text: "1. 自媒体团队中，你最想担任？", options: ["A.导演", "B.主演", "C.剪辑", "D.运营"] },
+            { id: 2, text: "2. 你最喜欢的短视频叙事方式？", options: ["A.极速卡点", "B.电影感Vlog", "C.幽默吐槽", "D.深度访谈"] },
+            // ... 中间题目请按此格式添加 ...
+            { id: 26, text: "26. 你允许老师在私人号发包含你的肖像吗？", options: ["A.绝对允许", "B.询问我后允许", "C.绝不允许", "D.看把我拍得好不好"] },
+            { id: 27, text: "27. 承上题，请写出你的原因：", type: "text" },
+            // ...
+            { id: 50, text: "50. 许愿池：请写下一个你最想实现，但目前不敢做的校园拍摄计划。", type: "text" }
+        ];
+
+        const roles = {
+            "A": { title: "【全能主创】", task: "拍摄《我眼中的宽中：一分钟混剪》。" },
+            "B": { title: "【视觉导演/摄影师】", task: "拍摄《校园光影：寻找 3 个最美的角落》。" },
+            "C": { title: "【后期大神/剪辑师】", task: "找一段旧素材进行《旧片新剪：赋予它全新的节奏》。" },
+            "D": { title: "【内容策划/运营】", task: "撰写一份《如何打造宽中爆款校庆视频》的脚本策划书。" }
+        };
+
+        // --- 核心逻辑 ---
+        let adminClickCount = 0;
+        let chartInstance = null;
+        let serverData = [];
+
+        function generateUUID() {
+            return 'xxxx-4xxx-yxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        function renderQuestions() {
+            const container = document.getElementById('questions-container');
+            let html = '';
+            questions.forEach((q) => {
+                html += `<div class="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                    <p class="font-bold mb-4">${q.text}</p>`;
+                if (q.type === 'text') {
+                    html += `<textarea id="q-${q.id}" class="w-full p-3 border rounded focus:outline-none focus:border-klein h-24" onchange="saveProgress()"></textarea>`;
+                } else {
+                    html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+                    q.options.forEach((opt) => {
+                        const val = opt.substring(0, 1); // 获取 A, B, C, D
+                        html += `
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="q-${q.id}" value="${val}" class="peer sr-only radio-custom" onchange="saveProgress()">
+                            <div class="p-3 border rounded-lg peer-hover:bg-gray-50 transition-colors text-sm">${opt}</div>
+                        </label>`;
+                    });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function saveProgress() {
+            const data = {
+                info: {
+                    name: document.getElementById('stu-name').value,
+                    class: document.getElementById('stu-class').value,
+                    id: document.getElementById('stu-id').value
+                },
+                answers: {}
+            };
+            questions.forEach(q => {
+                if (q.type === 'text') {
+                    data.answers[q.id] = document.getElementById(`q-${q.id}`).value;
+                } else {
+                    const selected = document.querySelector(`input[name="q-${q.id}"]:checked`);
+                    if (selected) data.answers[q.id] = selected.value;
+                }
+            });
+            localStorage.setItem('survey_draft', JSON.stringify(data));
+        }
+
+        function loadProgress() {
+            if (localStorage.getItem('survey_submitted') === 'true') {
+                document.getElementById('student-view').classList.add('hidden-view');
+                document.getElementById('result-view').classList.remove('hidden-view');
+                document.getElementById('result-content').innerHTML = "<p>你已提交过问卷，请勿重复提交。</p>";
+                return;
+            }
+            const saved = localStorage.getItem('survey_draft');
+            if (saved) {
+                const data = JSON.parse(saved);
+                document.getElementById('stu-name').value = data.info.name || '';
+                document.getElementById('stu-class').value = data.info.class || '';
+                document.getElementById('stu-id').value = data.info.id || '';
+                
+                questions.forEach(q => {
+                    const ans = data.answers[q.id];
+                    if (ans) {
+                        if (q.type === 'text') {
+                            document.getElementById(`q-${q.id}`).value = ans;
+                        } else {
+                            const radio = document.querySelector(`input[name="q-${q.id}"][value="${ans}"]`);
+                            if (radio) radio.checked = true;
+                        }
+                    }
+                });
+            }
+        }
+
+        async function submitSurvey() {
+            const name = document.getElementById('stu-name').value;
+            const stuClass = document.getElementById('stu-class').value;
+            const stuId = document.getElementById('stu-id').value;
+
+            if (!name || !stuClass || !stuId) return alert("请填写完整的个人信息！");
+
+            let counts = { "A": 0, "B": 0, "C": 0, "D": 0 };
+            let missing = false;
+            let fullAnswers = [];
+
+            questions.forEach(q => {
+                let ansValue = "";
+                if (q.type === 'text') {
+                    ansValue = document.getElementById(`q-${q.id}`).value;
+                } else {
+                    const selected = document.querySelector(`input[name="q-${q.id}"]:checked`);
+                    if (!selected) missing = true;
+                    else {
+                        ansValue = selected.value;
+                        counts[ansValue]++;
+                    }
+                }
+                fullAnswers.push({ id: q.id, answer: ansValue });
+            });
+
+            if (missing) return alert("请完成所有选择题！");
+
+            // 计算平局
+            const maxCount = Math.max(...Object.values(counts));
+            const topChoices = Object.keys(counts).filter(k => counts[k] === maxCount);
+
+            // 显示结果
+            let resultHtml = '';
+            topChoices.forEach(choice => {
+                resultHtml += `<div class="bg-gray-50 p-4 rounded text-left border-l-4 border-klein mb-2">
+                    <p class="font-bold text-lg text-klein">${roles[choice].title}</p>
+                    <p class="text-sm">建议作业：${roles[choice].task}</p>
+                </div>`;
+            });
+            if (topChoices.length > 1) {
+                resultHtml = `<p class="text-sm text-gray-500 mb-2">你的技能分布很均衡，以下定位请自行选择其一：</p>` + resultHtml;
+            }
+
+            document.getElementById('student-view').classList.add('hidden-view');
+            document.getElementById('result-view').classList.remove('hidden-view');
+            document.getElementById('result-content').innerHTML = resultHtml;
+
+            // 标记已提交
+            localStorage.setItem('survey_submitted', 'true');
+            localStorage.removeItem('survey_draft');
+
+            // 构造上传数据
+            const payload = {
+                action: "submit",
+                data: {
+                    uuid: generateUUID(),
+                    name: name,
+                    class: stuClass,
+                    studentId: stuId,
+                    answers: fullAnswers,
+                    counts: counts,
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            // 发送至 GAS
+            if(GAS_URL.includes("script.google.com")) {
+                try {
+                    await fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors', // GAS post 需要 no-cors
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (e) {
+                    console.error("上传失败", e);
+                }
+            }
+        }
+
+        // --- 教师后台逻辑 ---
+        function triggerAdmin() {
+            adminClickCount++;
+            if (adminClickCount >= 5) {
+                adminClickCount = 0;
+                const pwd = prompt("请输入后台验证码：");
+                if (pwd === ADMIN_PWD) {
+                    document.getElementById('student-view').classList.add('hidden-view');
+                    document.getElementById('result-view').classList.add('hidden-view');
+                    document.getElementById('teacher-view').classList.remove('hidden-view');
+                    fetchAdminData();
+                } else if(pwd !== null) {
+                    alert("密码错误");
+                }
+            }
+            setTimeout(() => { adminClickCount = 0; }, 3000);
+        }
+
+        function logoutAdmin() {
+            document.getElementById('teacher-view').classList.add('hidden-view');
+            if (localStorage.getItem('survey_submitted') === 'true') {
+                document.getElementById('result-view').classList.remove('hidden-view');
+            } else {
+                document.getElementById('student-view').classList.remove('hidden-view');
+            }
+        }
+
+        function switchAdminTab(tab) {
+            document.getElementById('tab-list').classList.remove('text-klein', 'border-b-2', 'border-klein');
+            document.getElementById('tab-stats').classList.remove('text-klein', 'border-b-2', 'border-klein');
+            document.getElementById('tab-list').classList.add('text-gray-500');
+            document.getElementById('tab-stats').classList.add('text-gray-500');
+
+            document.getElementById('admin-list').classList.add('hidden-view');
+            document.getElementById('admin-stats').classList.add('hidden-view');
+
+            if(tab === 'list') {
+                document.getElementById('tab-list').classList.add('text-klein', 'border-b-2', 'border-klein');
+                document.getElementById('tab-list').classList.remove('text-gray-500');
+                document.getElementById('admin-list').classList.remove('hidden-view');
+            } else {
+                document.getElementById('tab-stats').classList.add('text-klein', 'border-b-2', 'border-klein');
+                document.getElementById('tab-stats').classList.remove('text-gray-500');
+                document.getElementById('admin-stats').classList.remove('hidden-view');
+                initStatsView();
+            }
+        }
+
+        async function fetchAdminData() {
+            if(!GAS_URL.includes("script.google.com")) {
+                document.getElementById('student-list-container').innerHTML = "<p class='text-red-500'>尚未配置 Google Apps Script URL，无法拉取数据。</p>";
+                return;
+            }
+            try {
+                const res = await fetch(`${GAS_URL}?action=getData&pwd=${ADMIN_PWD}`);
+                const json = await res.json();
+                serverData = json.data;
+                renderStudentList();
+            } catch(e) {
+                document.getElementById('student-list-container').innerHTML = "<p class='text-red-500'>数据加载失败</p>";
+            }
+        }
+
+        function renderStudentList() {
+            const container = document.getElementById('student-list-container');
+            if(serverData.length === 0) { container.innerHTML = "<p>暂无数据</p>"; return; }
+            
+            let html = '';
+            serverData.forEach((student, index) => {
+                html += `
+                <div class="border rounded">
+                    <div class="p-3 bg-gray-50 cursor-pointer flex justify-between items-center" onclick="toggleDetails(${index})">
+                        <span class="font-bold">${student.name} <span class="text-sm font-normal text-gray-500 ml-2">${student.class} | ${student.studentId}</span></span>
+                        <span class="text-xs text-gray-400">UUID: ${student.uuid.substring(0,8)}... ▼</span>
+                    </div>
+                    <div id="details-${index}" class="hidden-view p-3 text-sm text-gray-600 border-t space-y-1">
+                        <p class="font-bold mb-2 text-klein">选项分布: A:${student.counts.A} B:${student.counts.B} C:${student.counts.C} D:${student.counts.D}</p>
+                `;
+                student.answers.forEach(ans => {
+                    html += `<p>Q${ans.id}: <span class="text-black font-bold">${ans.answer}</span></p>`;
+                });
+                html += `</div></div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleDetails(index) {
+            const el = document.getElementById(`details-${index}`);
+            if(el.classList.contains('hidden-view')) el.classList.remove('hidden-view');
+            else el.classList.add('hidden-view');
+        }
+
+        function initStatsView() {
+            const select = document.getElementById('question-select');
+            if(select.options.length === 0) {
+                questions.forEach(q => {
+                    if(q.type !== 'text') {
+                        const opt = document.createElement('option');
+                        opt.value = q.id;
+                        opt.text = q.text;
+                        select.add(opt);
+                    }
+                });
+            }
+            updateChart();
+        }
+
+        function updateChart() {
+            const qId = parseInt(document.getElementById('question-select').value);
+            let stats = { A: 0, B: 0, C: 0, D: 0 };
+            
+            serverData.forEach(student => {
+                const ans = student.answers.find(a => a.id === qId);
+                if(ans && stats[ans.answer] !== undefined) {
+                    stats[ans.answer]++;
+                }
+            });
+
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['选项 A', '选项 B', '选项 C', '选项 D'],
+                    datasets: [{
+                        label: '选择人数',
+                        data: [stats.A, stats.B, stats.C, stats.D],
+                        backgroundColor: '#002FA7',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                }
+            });
+        }
+
+        // 初始化
+        window.onload = () => {
+            renderQuestions();
+            loadProgress();
+        };
+    </script>
+</body>
+</html>
