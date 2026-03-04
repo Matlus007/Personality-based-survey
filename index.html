@@ -371,10 +371,22 @@
             const maxCount = Math.max(...Object.values(counts));
             const topChoices = Object.keys(counts).filter(k => counts[k] === maxCount);
             
-            let resultHtml = topChoices.length > 1 
+            let resultHtml = `
+            <div class="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6">
+                <p class="text-xl font-bold text-gray-800 tracking-tight">${name}</p>
+                <div class="flex items-center justify-center gap-3 mt-2 text-sm text-gray-600 font-medium">
+                    <span class="bg-white px-3 py-1 rounded-md shadow-sm border border-gray-100">${stuClass}</span>
+                    <span class="bg-white px-3 py-1 rounded-md shadow-sm border border-gray-100">${stuId}</span>
+                </div>
+            </div>
+            `;
+
+            // 拼接提示语
+            resultHtml += topChoices.length > 1 
                 ? `<p class="text-sm text-gray-500 mb-4 text-left">根据数据，你的能力分布存在平局。请从以下定位中自行选择一个最符合心意的：</p>` 
                 : `<p class="text-sm text-gray-500 mb-4 text-left">为你匹配的专属定位：</p>`;
 
+            // 拼接分配到的角色和作业
             topChoices.forEach(c => {
                 resultHtml += `
                 <div class="bg-gray-50 p-5 rounded-xl text-left border-l-4 border-klein mb-3">
