@@ -124,7 +124,6 @@
     <script>
         // ================= 配置区 =================
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwy0U6bBnt8cYjLvIHZGSFU_H8kAEc0wwuxs0C5tOpWyswCzjgBhuEAfvNNaYhZ9VT1/exec"; 
-        const ADMIN_PWD = "88888888";
 
         // ================= 题库数据 =================
         // 请在此处补充完整的 50 题
@@ -450,15 +449,34 @@
             adminClickCount++;
             if (adminClickCount >= 5) {
                 adminClickCount = 0;
-                const pwd = prompt("System Admin Access:");
-                if (pwd === ADMIN_PWD) {
-                    document.getElementById('student-view').classList.add('hidden-view');
-                    document.getElementById('result-view').classList.add('hidden-view');
-                    document.getElementById('teacher-view').classList.remove('hidden-view');
-                    fetchAdminData();
+                const pwdInput = prompt("System Admin Access:");
+                if (pwdInput) { // 只要有输入，就向后端发起请求验证
+                    fetchAdminData(pwdInput);
                 }
             }
             setTimeout(() => { adminClickCount = 0; }, 3000);
+        }
+
+        async function fetchAdminData(pwdInput) {
+            const container = document.getElementById('student-list-container');
+            try {
+                const res = await fetch(`${GAS_URL}?action=getData&pwd=${pwdInput}`);
+                const json = await res.json();
+                
+                // 根据后端的返回状态判断密码是否正确
+                if (json.status === "success") {
+                    serverData = json.data.reverse(); 
+                    document.getElementById('student-view').classList.add('hidden-view');
+                    document.getElementById('result-view').classList.add('hidden-view');
+                    document.getElementById('teacher-view').classList.remove('hidden-view');
+                    renderStudentList();
+                    initChartSelect();
+                } else {
+                    alert("验证失败：密码错误或无权限访问。");
+                }
+            } catch(e) {
+                alert("网络请求失败，请检查配置。");
+            }
         }
 
         function logoutAdmin() {
