@@ -266,10 +266,10 @@
 
         function loadProgress() {
             try {
-                // if (localStorage.getItem('survey_submitted') === 'true') {
-                //     showResultView("<p class='text-gray-500'>你已完成问卷提交，无法重复作答。</p>");
-                //     return;
-                // }
+                if (localStorage.getItem('survey_submitted') === 'true') {
+                    showResultView("<p class='text-gray-500'>你已完成问卷提交，无法重复作答。</p>");
+                    return;
+                }
                 const saved = localStorage.getItem('survey_draft');
                 if (saved) {
                     const data = JSON.parse(saved);
