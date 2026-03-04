@@ -142,25 +142,37 @@
             const container = document.getElementById('questions-container');
             let html = '';
             questions.forEach((q) => {
-                html += `<div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <p class="font-bold text-gray-800 mb-4">${q.text}</p>`;
+                // Add ID to wrapper for highlighting
+                html += `<div id="wrapper-${q.id}" class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 transition-all duration-300">
+                    <p class="font-bold text-gray-800 mb-4">${q.text} <span class="text-red-500">*</span></p>`;
+                
                 if (q.type === 'text') {
-                    html += `<textarea id="q-${q.id}" class="w-full p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-klein resize-none h-28" onchange="saveProgress()" placeholder="请输入你的看法..."></textarea>`;
+                    html += `<textarea id="q-${q.id}" class="w-full p-4 border border-gray-200 rounded-lg focus:outline-none focus:border-klein resize-none h-28 transition-colors" onchange="saveProgress(); clearError(${q.id})" placeholder="请输入你的看法..."></textarea>`;
                 } else {
                     html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
                     q.options.forEach((opt) => {
                         const val = opt.charAt(0);
                         html += `
                         <label class="relative cursor-pointer block">
-                            <input type="radio" name="q-${q.id}" value="${val}" class="peer sr-only radio-peer" onchange="saveProgress()">
+                            <input type="radio" name="q-${q.id}" value="${val}" class="peer sr-only radio-peer" onchange="saveProgress(); clearError(${q.id})">
                             <div class="p-3 border border-gray-200 rounded-lg transition-all text-sm font-medium text-gray-600">${opt}</div>
                         </label>`;
                     });
                     html += `</div>`;
                 }
+                
+                // Hidden error message
+                html += `<p id="error-${q.id}" class="text-red-500 text-sm mt-3 hidden-view font-medium">请完成此题</p>`;
                 html += `</div>`;
             });
             container.innerHTML = html;
+        }
+
+        function clearError(id) {
+            const wrapper = document.getElementById(`wrapper-${id}`);
+            const errorText = document.getElementById(`error-${id}`);
+            if (wrapper) wrapper.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+            if (errorText) errorText.classList.add('hidden-view');
         }
 
         function saveProgress() {
