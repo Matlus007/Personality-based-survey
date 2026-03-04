@@ -4,22 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>短视频与社交媒体选修课 - 宽柔中学至达城分校</title>
+    
+    <link rel="icon" href="data:,">
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: { colors: { klein: '#002FA7' } }
-            }
-        }
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #FAFAFA; color: #333; }
         .hidden-view { display: none; }
-        /* 自定义单选框样式 */
-        .radio-peer:checked + div { background-color: #002FA7; color: white; border-color: #002FA7; }
+        
+        /* 采用原生 CSS 定义克莱因蓝，解决本地执行时的 ReferenceError */
+        :root {
+            --klein-blue: #002FA7;
+        }
+        
+        .text-klein { color: var(--klein-blue) !important; }
+        .bg-klein { background-color: var(--klein-blue) !important; }
+        .border-klein { border-color: var(--klein-blue) !important; }
+        .hover\:text-klein:hover { color: var(--klein-blue) !important; }
+        .focus\:border-klein:focus { border-color: var(--klein-blue) !important; }
+        .focus\:ring-klein:focus { box-shadow: 0 0 0 1px var(--klein-blue) !important; }
+        
+        .radio-peer:checked + div { 
+            background-color: var(--klein-blue); 
+            color: white; 
+            border-color: var(--klein-blue); 
+        }
     </style>
-    <link rel="icon" href="data:,">
 </head>
 <body class="min-h-screen pb-16">
 
@@ -73,7 +86,7 @@
 
                     <div id="admin-stats" class="hidden-view">
                         <select id="question-select" class="w-full p-3 border border-gray-200 rounded-lg mb-8 focus:outline-none focus:border-klein bg-gray-50" onchange="updateChart()">
-                            </select>
+                        </select>
                         <div class="relative h-72 w-full">
                             <canvas id="statsChart"></canvas>
                         </div>
@@ -89,20 +102,17 @@
 
     <script>
         // ================= 配置区 =================
-        // 【重要】部署完 Google Apps Script 后，将生成的 URL 填入此处
         const GAS_URL = "在此处填入你的_Google_Apps_Script_Web_App_URL"; 
         const ADMIN_PWD = "88888888";
 
         // ================= 题库数据 =================
-        // 此处放置前3题与后2题作为示例。请将剩余题目按此格式补充完整。
+        // 请在此处补充完整的 50 题
         const questions = [
             { id: 1, text: "1. 自媒体团队中，你最想担任？", options: ["A.导演", "B.主演", "C.剪辑", "D.运营"] },
             { id: 2, text: "2. 你最喜欢的短视频叙事方式？", options: ["A.极速卡点", "B.电影感Vlog", "C.幽默吐槽", "D.深度访谈"] },
             { id: 3, text: "3. 你习惯使用哪种设备拍摄？", options: ["A.手机", "B.单反/微单", "C.运动相机", "D.全景相机"] },
-            // ... 补充第4题至第25题 ...
             { id: 26, text: "26. 你允许老师在私人号发包含你的肖像吗？", options: ["A.绝对允许", "B.询问我后允许", "C.绝不允许", "D.看把我拍得好不好"] },
-            { id: 27, text: "27. 承上题，请写出你的原因：", type: "text" }, // 填空题类型
-            // ... 补充第28题至第49题 ...
+            { id: 27, text: "27. 承上题，请写出你的原因：", type: "text" },
             { id: 50, text: "50. 许愿池：请写下一个你最想实现，但目前不敢做的校园拍摄计划。", type: "text" }
         ];
 
@@ -118,7 +128,6 @@
         let serverData = [];
         let adminClickCount = 0;
 
-        // 生成 UUID
         function generateUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
                 const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -126,7 +135,6 @@
             });
         }
 
-        // 渲染题目
         function renderQuestions() {
             const container = document.getElementById('questions-container');
             let html = '';
@@ -138,7 +146,7 @@
                 } else {
                     html += `<div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
                     q.options.forEach((opt) => {
-                        const val = opt.charAt(0); // 提取 A/B/C/D
+                        const val = opt.charAt(0);
                         html += `
                         <label class="relative cursor-pointer block">
                             <input type="radio" name="q-${q.id}" value="${val}" class="peer sr-only radio-peer" onchange="saveProgress()">
@@ -152,7 +160,6 @@
             container.innerHTML = html;
         }
 
-        // 进度缓存逻辑
         function saveProgress() {
             const data = {
                 info: {
@@ -170,35 +177,44 @@
                     if (selected) data.answers[q.id] = selected.value;
                 }
             });
-            localStorage.setItem('survey_draft', JSON.stringify(data));
+            
+            // 使用 try-catch 捕获无痕模式/隐私模式下的存储拦截报错
+            try {
+                localStorage.setItem('survey_draft', JSON.stringify(data));
+            } catch (e) {
+                console.warn("浏览器隐私设置限制了本地缓存功能。");
+            }
         }
 
         function loadProgress() {
-            if (localStorage.getItem('survey_submitted') === 'true') {
-                showResultView("<p class='text-gray-500'>你已完成问卷提交，无法重复作答。</p>");
-                return;
-            }
-            const saved = localStorage.getItem('survey_draft');
-            if (saved) {
-                const data = JSON.parse(saved);
-                document.getElementById('stu-name').value = data.info.name || '';
-                document.getElementById('stu-class').value = data.info.class || '';
-                document.getElementById('stu-id').value = data.info.id || '';
-                
-                questions.forEach(q => {
-                    const ans = data.answers[q.id];
-                    if (ans) {
-                        if (q.type === 'text') document.getElementById(`q-${q.id}`).value = ans;
-                        else {
-                            const radio = document.querySelector(`input[name="q-${q.id}"][value="${ans}"]`);
-                            if (radio) radio.checked = true;
+            try {
+                if (localStorage.getItem('survey_submitted') === 'true') {
+                    showResultView("<p class='text-gray-500'>你已完成问卷提交，无法重复作答。</p>");
+                    return;
+                }
+                const saved = localStorage.getItem('survey_draft');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    document.getElementById('stu-name').value = data.info.name || '';
+                    document.getElementById('stu-class').value = data.info.class || '';
+                    document.getElementById('stu-id').value = data.info.id || '';
+                    
+                    questions.forEach(q => {
+                        const ans = data.answers[q.id];
+                        if (ans) {
+                            if (q.type === 'text') document.getElementById(`q-${q.id}`).value = ans;
+                            else {
+                                const radio = document.querySelector(`input[name="q-${q.id}"][value="${ans}"]`);
+                                if (radio) radio.checked = true;
+                            }
                         }
-                    }
-                });
+                    });
+                }
+            } catch (e) {
+                console.warn("无法读取本地缓存。");
             }
         }
 
-        // 提交表单
         async function submitSurvey() {
             const btn = document.getElementById('submit-btn');
             const name = document.getElementById('stu-name').value.trim();
