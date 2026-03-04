@@ -87,9 +87,12 @@
                     <div id="admin-stats" class="hidden-view">
                         <select id="question-select" class="w-full p-3 border border-gray-200 rounded-lg mb-8 focus:outline-none focus:border-klein bg-gray-50" onchange="updateChart()">
                         </select>
-                        <div class="relative h-72 w-full">
+
+                        <div id="chart-container" class="relative h-72 w-full">
                             <canvas id="statsChart"></canvas>
                         </div>
+                        
+                        <div id="text-answers-container" class="hidden-view h-72 overflow-y-auto space-y-3 pr-2"></div>
                     </div>
                 </div>
             </div>
@@ -409,12 +412,10 @@
             const select = document.getElementById('question-select');
             if(select.options.length === 0) {
                 questions.forEach(q => {
-                    if(q.type !== 'text') {
-                        const opt = document.createElement('option');
-                        opt.value = q.id;
-                        opt.text = q.text;
-                        select.add(opt);
-                    }
+                    const opt = document.createElement('option');
+                    opt.value = q.id;
+                    opt.text = q.text;
+                    select.add(opt);
                 });
             }
             updateChart();
@@ -422,37 +423,78 @@
 
         function updateChart() {
             const qId = parseInt(document.getElementById('question-select').value);
-            let stats = { A: 0, B: 0, C: 0, D: 0 };
-            
-            serverData.forEach(stu => {
-                const ans = stu.answers.find(a => a.id === qId);
-                if(ans && stats[ans.answer] !== undefined) stats[ans.answer]++;
-            });
+            const questionDef = questions.find(q => q.id === qId);
 
-            const ctx = document.getElementById('statsChart').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
+            const chartContainer = document.getElementById('chart-container');
+            const textContainer = document.getElementById('text-answers-container');
 
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['选项 A', '选项 B', '选项 C', '选项 D'],
-                    datasets: [{
-                        data: [stats.A, stats.B, stats.C, stats.D],
-                        backgroundColor: '#002FA7',
-                        borderRadius: 6,
-                        barPercentage: 0.5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 }, border: { dash: [4, 4] } }
+            // 逻辑分支 1：如果是文本填空题
+            if (questionDef && questionDef.type === 'text') {
+                chartContainer.classList.add('hidden-view');
+                textContainer.classList.remove('hidden-view');
+                
+                let listHtml = '';
+                serverData.forEach(stu => {
+                    if (stu.answers) {
+                        const ans = stu.answers.find(a => a.id === qId);
+                        // 确保学生回答了该题，且内容不为空
+                        if (ans && ans.answer && ans.answer.trim() !== "") {
+                            listHtml += `
+                            <div class="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="font-bold text-gray-800">${stu.name}</span>
+                                    <span class="text-xs font-medium text-klein bg-blue-50 px-2 py-1 rounded">${stu.class}</span>
+                                </div>
+                                <p class="text-gray-700 text-sm whitespace-pre-wrap leading-relaxed">${ans.answer}</p>
+                            </div>`;
+                        }
                     }
+                });
+
+                if (listHtml === '') {
+                    listHtml = `<div class="flex items-center justify-center h-full"><p class="text-gray-400">暂无学生提交此题的有效回答。</p></div>`;
                 }
-            });
+                textContainer.innerHTML = listHtml;
+
+            // 逻辑分支 2：如果是选择题 (原有图表逻辑)
+            } else {
+                chartContainer.classList.remove('hidden-view');
+                textContainer.classList.add('hidden-view');
+
+                let stats = { A: 0, B: 0, C: 0, D: 0 };
+                
+                serverData.forEach(stu => {
+                    if (stu.answers) {
+                        const ans = stu.answers.find(a => a.id === qId);
+                        if(ans && stats[ans.answer] !== undefined) stats[ans.answer]++;
+                    }
+                });
+
+                const ctx = document.getElementById('statsChart').getContext('2d');
+                if(chartInstance) chartInstance.destroy();
+
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['选项 A', '选项 B', '选项 C', '选项 D'],
+                        datasets: [{
+                            data: [stats.A, stats.B, stats.C, stats.D],
+                            backgroundColor: '#002FA7', // 延续克莱因蓝设定
+                            borderRadius: 6,
+                            barPercentage: 0.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false } },
+                            y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 }, border: { dash: [4, 4] } }
+                        }
+                    }
+                });
+            }
         }
 
         // 初始化运行
