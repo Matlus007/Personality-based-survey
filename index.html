@@ -287,22 +287,25 @@
                     }
                 }
 
+                const wrapper = document.getElementById(`wrapper-${q.id}`);
+                const errText = document.getElementById(`error-${q.id}`);
+
                 if (!answered) {
                     isMissing = true;
-                    if (!firstMissingId) firstMissingId = q.id; // Record the first empty question
-                    
-                    // Trigger red highlight UI
-                    document.getElementById(`wrapper-${q.id}`).classList.add('border-red-500', 'ring-1', 'ring-red-500');
-                    document.getElementById(`error-${q.id}`).classList.remove('hidden-view');
+                    if (!firstMissingId) firstMissingId = `wrapper-${q.id}`;
+                    wrapper.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    errText.classList.remove('hidden-view');
                 } else {
+                    wrapper.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                    errText.classList.add('hidden-view');
                     payloadAnswers.push({ id: q.id, answer: ansValue });
                 }
             });
 
+            // 3. 执行滚动拦截
             if (isMissing) {
-                // Scroll smoothly to the first missed question so the student sees it immediately
-                document.getElementById(`wrapper-${firstMissingId}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return; // Halt execution, do not submit
+                document.getElementById(firstMissingId).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
             }
 
             btn.innerText = "数据上传中...";
