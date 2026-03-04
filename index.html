@@ -322,6 +322,8 @@
 
         function logoutAdmin() {
             document.getElementById('teacher-view').classList.add('hidden-view');
+            
+            renderQuestions();
             loadProgress(); // 根据 localStorage 状态决定显示哪个页面
         }
 
