@@ -499,7 +499,42 @@
                 const res = await fetch(`${GAS_URL}?action=getData&pwd=${ADMIN_PWD}`);
                 const json = await res.json();
                 
-                serverData = json.data.reverse(); // 最新提交在前
+                // ================= 班级智能排序逻辑 =================
+                const parseClassString = (className) => {
+                    let str = String(className || "").trim();
+                    
+                    // 1. 年段权重 (高三优先)
+                    let grade = 99; 
+                    if (str.includes("高三")) grade = 1;
+                    else if (str.includes("高二")) grade = 2;
+                    else if (str.includes("高一")) grade = 3;
+
+                    // 2. 科系权重 (理科 > 文商 > 商科)
+                    let stream = 99;
+                    if (str.includes("理")) stream = 1;
+                    else if (str.includes("文商")) stream = 2;
+                    else if (str.includes("商") && !str.includes("文商")) stream = 3;
+
+                    // 3. 班级数字权重 (提取字符串中的数字)
+                    let numMatch = str.match(/\d+/);
+                    let num = numMatch ? parseInt(numMatch[0], 10) : 99;
+
+                    return { grade, stream, num };
+                };
+
+                // 对拉取到的数据进行多层级排序
+                serverData = json.data.sort((a, b) => {
+                    let classA = parseClassString(a.class);
+                    let classB = parseClassString(b.class);
+
+                    // 优先比对年段
+                    if (classA.grade !== classB.grade) return classA.grade - classB.grade;
+                    // 若年段相同，比对科系
+                    if (classA.stream !== classB.stream) return classA.stream - classB.stream;
+                    // 若科系也相同，比对班级数字
+                    return classA.num - classB.num;
+                });
+
                 renderStudentList();
             } catch(e) {
                 container.innerHTML = "<p class='text-red-500'>拉取数据失败，请检查网络或 GAS 配置。</p>";
