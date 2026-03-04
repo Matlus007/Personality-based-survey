@@ -237,27 +237,45 @@
             const stuId = document.getElementById('stu-id').value.trim();
 
             if (!name || !stuClass || !stuId) return alert("请在顶部填写完整的姓名、班级和学号。");
-
+            
+            let firstMissingId = null;
             let counts = { "A": 0, "B": 0, "C": 0, "D": 0 };
             let isMissing = false;
             let payloadAnswers = [];
 
             questions.forEach(q => {
                 let ansValue = "";
+                let answered = false;
+
                 if (q.type === 'text') {
-                    ansValue = document.getElementById(`q-${q.id}`).value;
+                    ansValue = document.getElementById(`q-${q.id}`).value.trim();
+                    answered = ansValue !== ""; 
                 } else {
                     const selected = document.querySelector(`input[name="q-${q.id}"]:checked`);
-                    if (!selected) isMissing = true;
-                    else {
+                    if (selected) {
                         ansValue = selected.value;
                         counts[ansValue]++;
+                        answered = true;
                     }
                 }
-                payloadAnswers.push({ id: q.id, answer: ansValue });
+
+                if (!answered) {
+                    isMissing = true;
+                    if (!firstMissingId) firstMissingId = q.id; // Record the first empty question
+                    
+                    // Trigger red highlight UI
+                    document.getElementById(`wrapper-${q.id}`).classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    document.getElementById(`error-${q.id}`).classList.remove('hidden-view');
+                } else {
+                    payloadAnswers.push({ id: q.id, answer: ansValue });
+                }
             });
 
-            if (isMissing) return alert("尚有选择题未作答，请检查。");
+            if (isMissing) {
+                // Scroll smoothly to the first missed question so the student sees it immediately
+                document.getElementById(`wrapper-${firstMissingId}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // Halt execution, do not submit
+            }
 
             btn.innerText = "数据上传中...";
             btn.disabled = true;
