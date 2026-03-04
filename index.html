@@ -46,17 +46,25 @@
     <main class="max-w-3xl mx-auto px-5 mt-8" id="main-container">
         
         <div id="student-view">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
-                <h2 class="text-lg font-bold mb-4 border-b border-gray-100 pb-3">个人信息登记</h2>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8 transition-all duration-300" id="wrapper-info">
+                <h2 class="text-lg font-bold mb-4 border-b border-gray-100 pb-3">个人信息登记 <span class="text-red-500">*</span></h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <input type="text" id="stu-name" placeholder="姓名" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein transition" onchange="saveProgress()">
-                    <input type="text" id="stu-class" placeholder="班级 (例: 高一理1)" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein transition" onchange="saveProgress()">
-                    <input type="text" id="stu-id" placeholder="学号" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein transition" onchange="saveProgress()">
+                    <div>
+                        <input type="text" id="stu-name" placeholder="姓名" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein transition" onchange="saveProgress()">
+                        <p id="error-stu-name" class="text-red-500 text-sm mt-1 hidden-view font-medium">请填写姓名</p>
+                    </div>
+                    <div>
+                        <input type="text" id="stu-class" placeholder="班级 (例: 高一理1)" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein transition" onchange="saveProgress()">
+                        <p id="error-stu-class" class="text-red-500 text-sm mt-1 hidden-view font-medium">请填写班级</p>
+                    </div>
+                    <div>
+                        <input type="text" id="stu-id" placeholder="学号" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein focus:ring-1 focus:ring-klein transition" onchange="saveProgress()">
+                        <p id="error-stu-id" class="text-red-500 text-sm mt-1 hidden-view font-medium">请填写学号</p>
+                    </div>
                 </div>
             </div>
 
-            <div id="questions-container" class="space-y-6">
-                </div>
+            <div id="questions-container" class="space-y-6"></div>
 
             <button id="submit-btn" onclick="submitSurvey()" class="w-full bg-klein text-white py-4 rounded-xl font-bold text-lg mt-10 shadow-lg hover:opacity-90 transition transform hover:-translate-y-0.5">提交问卷</button>
         </div>
@@ -236,11 +244,31 @@
             const stuClass = document.getElementById('stu-class').value.trim();
             const stuId = document.getElementById('stu-id').value.trim();
 
-            if (!name || !stuClass || !stuId) return alert("请在顶部填写完整的姓名、班级和学号。");
-            
-            let firstMissingId = null;
-            let counts = { "A": 0, "B": 0, "C": 0, "D": 0 };
             let isMissing = false;
+            let firstMissingId = null;
+
+            // 1. 验证个人信息
+            const infoFields = [
+                { id: 'stu-name', value: name },
+                { id: 'stu-class', value: stuClass },
+                { id: 'stu-id', value: stuId }
+            ];
+
+            infoFields.forEach(field => {
+                const el = document.getElementById(field.id);
+                const err = document.getElementById(`error-${field.id}`);
+                if (!field.value) {
+                    isMissing = true;
+                    if (!firstMissingId) firstMissingId = field.id;
+                    el.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    err.classList.remove('hidden-view');
+                } else {
+                    el.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                    err.classList.add('hidden-view');
+                }
+            });
+            
+            let counts = { "A": 0, "B": 0, "C": 0, "D": 0 };
             let payloadAnswers = [];
 
             questions.forEach(q => {
