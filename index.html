@@ -633,10 +633,14 @@
                         // 拆分字母（如 A）与内容（如 导演）以提升排版美感
                         const letter = opt.charAt(0);
                         const text = opt.substring(2);
+
+                        const count = stats[letter] || 0;
+
                         legendHtml += `
                         <div class="flex items-start p-3 bg-gray-50 rounded-lg border border-gray-100 shadow-sm transition">
                             <span class="font-bold text-klein mr-3 text-lg leading-none">${letter}</span>
                             <span class="text-sm text-gray-700 leading-tight">${text}</span>
+                            <span class="ml-2 text-xs font-bold bg-blue-100 text-klein px-2.5 py-1 rounded-full whitespace-nowrap">${count} 人</span>
                         </div>`;
                     });
                 }
