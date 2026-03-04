@@ -457,10 +457,10 @@
             setTimeout(() => { adminClickCount = 0; }, 3000);
         }
 
-        async function fetchAdminData(pwdInput) {
+        async function fetchAdminData(ADMIN_PWD) {
             const container = document.getElementById('student-list-container');
             try {
-                const res = await fetch(`${GAS_URL}?action=getData&pwd=${pwdInput}`);
+                const res = await fetch(`${GAS_URL}?action=getData&pwd=${ADMIN_PWD}`);
                 const json = await res.json();
                 
                 // 根据后端的返回状态判断密码是否正确
