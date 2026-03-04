@@ -93,8 +93,18 @@
                     </div>
 
                     <div id="admin-stats" class="hidden-view">
-                        <select id="question-select" class="w-full p-3 border border-gray-200 rounded-lg mb-8 focus:outline-none focus:border-klein bg-gray-50" onchange="updateChart()">
-                        </select>
+                        <div class="flex items-center gap-2 mb-8">
+                            <button id="btn-prev-q" onclick="navigateQuestion(-1)" class="p-3 bg-white border border-gray-200 rounded-lg text-klein hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed shadow-sm" title="上一题">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            </button>
+                            
+                            <select id="question-select" class="flex-1 p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-klein bg-gray-50 text-gray-700 font-medium truncate shadow-sm appearance-none text-center" onchange="updateChart()">
+                                </select>
+
+                            <button id="btn-next-q" onclick="navigateQuestion(1)" class="p-3 bg-white border border-gray-200 rounded-lg text-klein hover:bg-gray-50 transition disabled:opacity-30 disabled:cursor-not-allowed shadow-sm" title="下一题">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
 
                         <div id="chart-container" class="relative h-72 w-full">
                             <canvas id="statsChart"></canvas>
@@ -564,9 +574,25 @@
             updateChart();
         }
 
+        function navigateQuestion(step) {
+            const select = document.getElementById('question-select');
+            const currentIndex = select.selectedIndex;
+            const newIndex = currentIndex + step;
+
+            // 确保索引在有效范围内
+            if (newIndex >= 0 && newIndex < select.options.length) {
+                select.selectedIndex = newIndex;
+                updateChart(); // 切换后自动更新图表
+            }
+        }
+
         function updateChart() {
-            const qId = parseInt(document.getElementById('question-select').value);
+            const select = document.getElementById('question-select');
+            const qId = parseInt(select.value);
             const questionDef = questions.find(q => q.id === qId);
+
+            document.getElementById('btn-prev-q').disabled = select.selectedIndex === 0;
+            document.getElementById('btn-next-q').disabled = select.selectedIndex === select.options.length - 1;
 
             const chartContainer = document.getElementById('chart-container');
             const textContainer = document.getElementById('text-answers-container');
