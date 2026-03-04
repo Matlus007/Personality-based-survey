@@ -663,11 +663,11 @@
                         const count = stats[letter] || 0;
 
                         legendHtml += `
-                            <div onclick="showStudentsForOption(${qId}, '${letter}')" class="flex items-start p-3 bg-gray-50 rounded-lg border border-gray-100 shadow-sm transition hover:bg-blue-50 hover:border-blue-200 cursor-pointer">
-                                <span class="font-bold text-klein mr-3 text-lg leading-none">${letter}</span>
-                                <span class="text-sm text-gray-700 leading-tight flex-1">${text}</span>
-                                <span class="ml-2 text-xs font-bold bg-blue-100 text-klein px-2.5 py-1 rounded-full whitespace-nowrap">${count} 人</span>
-                            </div>`;
+                        <div class="flex items-start p-3 bg-gray-50 rounded-lg border border-gray-100 shadow-sm transition">
+                            <span class="font-bold text-klein mr-3 text-lg leading-none">${letter}</span>
+                            <span class="text-sm text-gray-700 leading-tight">${text}</span>
+                            <span class="ml-2 text-xs font-bold bg-blue-100 text-klein px-2.5 py-1 rounded-full whitespace-nowrap">${count} 人</span>
+                        </div>`;
                     });
                 }
                 legendHtml += '</div>';
@@ -701,62 +701,6 @@
                     }
                 });
             }
-        }
-
-        // ================= 悬浮窗数据展示逻辑 =================
-        function showStudentsForOption(qId, letter) {
-            // 1. 过滤出选择了该选项的学生
-            const students = serverData.filter(stu => {
-                if (!stu.answers) return false;
-                const ans = stu.answers.find(a => a.id === qId);
-                return ans && ans.answer === letter;
-            });
-
-            // 2. 动态创建或获取悬浮窗 DOM
-            let modal = document.getElementById('student-list-modal');
-            if (!modal) {
-                modal = document.createElement('div');
-                modal.id = 'student-list-modal';
-                modal.className = 'fixed inset-0 bg-black/40 z-[100] flex items-center justify-center hidden-view p-4 backdrop-blur-sm';
-                modal.innerHTML = `
-                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm max-h-[75vh] flex flex-col transform transition-all">
-                        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-xl">
-                            <h3 class="font-bold text-gray-800" id="modal-title">选项详情</h3>
-                            <button onclick="closeStudentList()" class="text-gray-400 hover:text-red-500 transition">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                            </button>
-                        </div>
-                        <div class="p-4 overflow-y-auto flex-1 space-y-2" id="modal-content">
-                            </div>
-                    </div>
-                `;
-                document.body.appendChild(modal);
-            }
-
-            // 3. 渲染数据至悬浮窗
-            document.getElementById('modal-title').innerText = `选择选项 ${letter} 的学生`;
-            let contentHtml = '';
-            
-            if (students.length === 0) {
-                contentHtml = '<p class="text-gray-400 text-center py-6 text-sm">暂无学生选择此项</p>';
-            } else {
-                students.forEach(stu => {
-                    contentHtml += `
-                        <div class="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-lg hover:shadow-sm transition">
-                            <span class="font-bold text-gray-700 text-sm">${stu.name}</span>
-                            <span class="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-1 rounded">${stu.class}</span>
-                        </div>
-                    `;
-                });
-            }
-            
-            document.getElementById('modal-content').innerHTML = contentHtml;
-            modal.classList.remove('hidden-view');
-        }
-
-        function closeStudentList() {
-            const modal = document.getElementById('student-list-modal');
-            if (modal) modal.classList.add('hidden-view');
         }
 
         // 初始化运行
