@@ -509,10 +509,25 @@
                         </div>
                         <div class="space-y-2 text-gray-600 h-64 overflow-y-auto pr-2">`;
                 
-                stu.answers.forEach(ans => {
-                    const qText = questions.find(q => q.id === ans.id)?.text || `第${ans.id}题`;
-                    html += `<p><span class="text-gray-400 mr-2">${qText}</span> <br/> <strong class="text-gray-800 block mt-1">${ans.answer || '未填'}</strong></p>`;
-                });
+                    if (stu.answers) {
+                        stu.answers.forEach(ans => {
+                            // 获取题目定义
+                            const qDef = questions.find(q => q.id === ans.id);
+                            const qText = qDef?.text || `第${ans.id}题`;
+                            
+                            let displayAnswer = ans.answer || '未填';
+                            
+                            // 事实判断：如果是选择题且有选项数据，将 A/B/C/D 还原为完整选项文本
+                            if (qDef && qDef.options && ans.answer) {
+                                const matchedOption = qDef.options.find(opt => opt.startsWith(ans.answer));
+                                if (matchedOption) {
+                                    displayAnswer = matchedOption;
+                                }
+                            }
+
+                            html += `<p><span class="text-gray-400 mr-2">${qText}</span> <br/> <strong class="text-gray-800 block mt-1 whitespace-pre-wrap">${displayAnswer}</strong></p>`;
+                        });
+                    }
                 
                 html += `</div></div></div>`;
             });
