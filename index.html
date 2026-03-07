@@ -546,6 +546,7 @@
                     });
 
                     renderStudentList();
+                    document.getElementById("teacher-view").scrollIntoView({ behavior: 'smooth', block: 'start' });
                 } else {
                     // 后端拦截了请求（密码错误）
                     alert("验证失败：验证码错误或拒绝访问。");
